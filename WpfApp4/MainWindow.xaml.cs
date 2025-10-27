@@ -6,20 +6,20 @@ using System.Windows.Threading;
 
 namespace WpfApp4
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
-        private Process process1;
-        private DispatcherTimer timer;
+        private Process? _process1;
+        private DispatcherTimer? _timer;
 
         // Импорт функций Windows API
         [DllImport("user32.dll", SetLastError = true)]
-        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        private static extern IntPtr FindWindow(string lpClassName, string? lpWindowName);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, string lParam);
+        private static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, string lParam);
 
         // Константа для сообщения WM_SETTEXT
-        private const uint WM_SETTEXT = 0x000C;
+        private const uint WmSettext = 0x000C;
 
         public MainWindow()
         {
@@ -30,7 +30,7 @@ namespace WpfApp4
         {
             try
             {
-                process1 = new Process
+                _process1 = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
@@ -38,17 +38,17 @@ namespace WpfApp4
                         UseShellExecute = true
                     }
                 };
-                process1.Start();
+                _process1.Start();
 
                 // Время га запуск
-                if (!process1.WaitForInputIdle(5000))
+                if (!_process1.WaitForInputIdle(5000))
                 {
                     label1.Content = "Paint не ответил timely";
                     return;
                 }
 
                 // Проверка заголовка через MainWindowTitle
-                label1.Content = $"Запущен процесс: {process1.ProcessName}\nID: {process1.Id}\nЗаголовок: {process1.MainWindowTitle}";
+                label1.Content = $"Запущен процесс: {_process1.ProcessName}\nID: {_process1.Id}\nЗаголовок: {_process1.MainWindowTitle}";
                 StartButton.IsEnabled = false;
                 StopButton.IsEnabled = true;
 
@@ -64,13 +64,13 @@ namespace WpfApp4
         {
             try
             {
-                timer?.Stop();
+                _timer.Stop();
 
-                if (process1 != null && !process1.HasExited)
+                if (_process1 != null && !_process1.HasExited)
                 {
-                    process1.Kill();
-                    process1.WaitForExit(3000);
-                    process1.Close();
+                    _process1.Kill();
+                    _process1.WaitForExit(3000);
+                    _process1.Close();
                 }
 
                 label1.Content = "Процесс остановлен";
@@ -85,9 +85,9 @@ namespace WpfApp4
 
         private void StartTimer()
         {
-            timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(1);
-            timer.Tick += (s, e) =>
+            _timer = new DispatcherTimer();
+            _timer.Interval = TimeSpan.FromSeconds(1);
+            _timer.Tick += (s, _) =>
             {
                 try
                 {
@@ -100,17 +100,21 @@ namespace WpfApp4
 
                     if (windowHandle != IntPtr.Zero)
                     {
-                        SendMessage(windowHandle, WM_SETTEXT, IntPtr.Zero, currentTime); // Только время
-                        label1.Content = $"Paint работает.\nID: {process1.Id}\nЗаголовок окна обновлен: {currentTime}";
+                        SendMessage(windowHandle, WmSettext, IntPtr.Zero, currentTime); // Только время
+                        if (_process1 != null)
+                            label1.Content =
+                                $"Paint работает.\nID: {_process1.Id}\nЗаголовок окна обновлен: {currentTime}";
                     }
                     else
                     {
-                        label1.Content = $"Окно Paint не найдено. ID: {process1.Id}\nЗаголовок: {process1.MainWindowTitle}";
+                        if (_process1 != null)
+                            label1.Content =
+                                $"Окно Paint не найдено. ID: {_process1.Id}\nЗаголовок: {_process1.MainWindowTitle}";
                     }
 
-                    if (process1.HasExited)
+                    if (_process1 != null && _process1.HasExited)
                     {
-                        timer.Stop();
+                        _timer.Stop();
                         label1.Content = "Paint завершил работу";
                         StartButton.IsEnabled = true;
                         StopButton.IsEnabled = false;
@@ -121,7 +125,7 @@ namespace WpfApp4
                     MessageBox.Show($"Ошибка в таймере: {ex.Message}");
                 }
             };
-            timer.Start();
+            _timer.Start();
         }
     }
 }
